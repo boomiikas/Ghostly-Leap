@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.2/p5.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            font-family: 'Georgia', serif;
+            background: #0a0a0a;
+        }
+        canvas {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+<script>
+let level = 1;
+let playerX = 75;
+let playerY;
+let bridges = [];
+let currentBridge = 0;
+let taps = 0;
+let score = 0;
+let timer = 0;
+let gameState = 'waiting';
+let tapTimer = 0;
+const TAP_WINDOW = 30;
+let moonPhase = 0;
+let mist = [];
+let gravestones = [];
+let bats = [];
+let fireflies = [];
+
+function setup() {
+    createCanvas(windowWidth, windowHeight);
+    playerY = height * 0.8;
+    generateLevelBridges();
+    generateMist();
+    generateGravestones();
+    generateBats();
+    generateFireflies();
+}
+
+function draw() {
+    // Spooky gradient background
+    drawSpookyBackground();
+    
+    // Moon phases
+    moonPhase += 0.01;
+    drawMoon();
+    
+    // Atmospheric effects
+    drawMist();
+    drawGravestones();
+    drawBats();
+    drawFireflies();
+    
+    timer++;
+    drawBridges();
+    drawGhost();
+    drawSpookyUI();
+    
+    if (gameState === 'waiting' && taps > 0) {
+        tapTimer++;
+        if (tapTimer > TAP_WINDOW) {
+            movePlayer();
+        }
+    }
+}
+
+function drawSpookyBackground() {
+    // Gradient from dark purple to black
+    for (let y = 0; y < height; y++) {
+        let inter = map(y, 0, height, 0, 1);
+        let c = lerpColor(color(15, 5, 30), color(5, 5, 15), inter);
+        stroke(c);
+        line(0, y, width, y);
+    }
+}
+
+function drawMoon() {
+    push();
+    translate(width - 150, 100);
+    
+    // Moon glow
+    fill(255, 255, 200, 30);
+    noStroke();
+    ellipse(0, 0, 120, 120);
+    
+    // Moon body
+    fill(255, 255, 230);
+    ellipse(0, 0, 60, 60);
+    
+    // Moon craters
+    fill(220, 220, 200);
+    ellipse(-10, -8, 8, 8);
+    ellipse(15, 5, 5, 5);
+    ellipse(-5, 12, 6, 6);
+    
+    pop();
+}
+
+function drawMist() {
+    for (let m of mist) {
+        fill(255, 255, 255, m.opacity);
+        noStroke();
+        ellipse(m.x, m.y, m.size, m.size * 0.6);
+        m.x += m.speed;
+        m.y += sin(timer * 0.01 + m.offset) * 0.5;
+        
+        if (m.x > width + 50) {
+            m.x = -50;
+        }
+    }
+}
+
+function drawGravestones() {
+    for (let g of gravestones) {
+        fill(60, 60, 80);
+        rect(g.x, g.y, g.width, g.height);
+        
+        // Gravestone top
+        fill(50, 50, 70);
+        arc(g.x + g.width/2, g.y, g.width, g.width/2, PI, TWO_PI);
+        
+        // Spooky cross or decoration
+        stroke(40, 40, 60);
+        strokeWeight(2);
+        line(g.x + g.width/2, g.y + 5, g.x + g.width/2, g.y + g.height - 5);
+        line(g.x + 5, g.y + 10, g.x + g.width - 5, g.y + 10);
+        noStroke();
+    }
+}
+
+function drawBats() {
+    for (let b of bats) {
+        push();
+        translate(b.x, b.y);
+        
+        // Bat body
+        fill(20, 20, 30);
+        ellipse(0, 0, 4, 6);
+        
+        // Bat wings
+        let wingFlap = sin(timer * 0.3 + b.offset) * 0.3;
+        fill(30, 30, 40);
+        ellipse(-8, wingFlap, 8, 4);
+        ellipse(8, wingFlap, 8, 4);
+        
+        pop();
+        
+        b.x += b.speedX;
+        b.y += b.speedY + sin(timer * 0.02 + b.offset) * 0.5;
+        
+        if (b.x > width + 20 || b.x < -20) {
+            b.speedX *= -1;
+        }
+        if (b.y > height - 50 || b.y < 50) {
+            b.speedY *= -1;
+        }
+    }
+}
+
+function drawFireflies() {
+    for (let f of fireflies) {
+        let brightness = sin(timer * 0.1 + f.offset) * 0.5 + 0.5;
+        fill(255, 255, 100, brightness * 150);
+        noStroke();
+        ellipse(f.x, f.y, 4, 4);
+        
+        // Firefly glow
+        fill(255, 255, 100, brightness * 30);
+        ellipse(f.x, f.y, 15, 15);
+        
+        f.x += sin(timer * 0.01 + f.offset) * 0.5;
+        f.y += cos(timer * 0.01 + f.offset) * 0.3;
+        
+        if (f.x > width) f.x = 0;
+        if (f.x < 0) f.x = width;
+        if (f.y > height) f.y = 0;
+        if (f.y < 0) f.y = height;
+    }
+}
+
+function drawBridges() {
+    let y = height * 0.85;
+    for (let i = 0; i < bridges.length; i++) {
+        let b = bridges[i];
+        
+        // Bridge shadow
+        fill(10, 10, 20);
+        rect(b.x + 2, y - b.height + 2, b.width, b.height);
+        
+        // Bridge body with spooky texture
+        fill(40 + level * 15, 35 + level * 10, 50 + level * 20);
+        rect(b.x, y - b.height, b.width, b.height);
+        
+        // Bridge planks
+        stroke(30, 25, 40);
+        strokeWeight(1);
+        for (let j = 0; j < b.width; j += 8) {
+            line(b.x + j, y - b.height, b.x + j, y);
+        }
+        noStroke();
+        
+        // Soul orbs floating above bridge
+        for (let j = 0; j < b.souls; j++) {
+            let sx = b.x + (b.width / (b.souls + 1)) * (j + 1);
+            let sy = y - b.height - 15 + sin(timer * 0.05 + j) * 3;
+            
+            // Soul glow
+            fill(100, 200, 255, 100);
+            ellipse(sx, sy, 20, 20);
+            
+            // Soul core
+            fill(150, 220, 255);
+            ellipse(sx, sy, 10, 10);
+            
+            // Soul sparkles
+            fill(255, 255, 255, 200);
+            for (let k = 0; k < 3; k++) {
+                let sparkleX = sx + sin(timer * 0.1 + j + k) * 8;
+                let sparkleY = sy + cos(timer * 0.1 + j + k) * 8;
+                ellipse(sparkleX, sparkleY, 2, 2);
+            }
+        }
+        
+        // Highlight current bridge
+        if (i === currentBridge + 1) {
+            stroke(255, 255, 100, 150);
+            strokeWeight(3);
+            noFill();
+            rect(b.x - 5, y - b.height - 5, b.width + 10, b.height + 10);
+            noStroke();
+        }
+    }
+}
+
+function drawGhost() {
+    push();
+    translate(playerX, playerY);
+    
+    // Ghost trail
+    for (let i = 0; i < 5; i++) {
+        let alpha = (5 - i) * 30;
+        fill(255, 255, 255, alpha);
+        let trailY = sin(timer * 0.1 + i) * 2;
+        ellipse(-i * 3, trailY, 25 - i * 2, 35 - i * 2);
+    }
+    
+    // Ghost body with floating animation
+    let floatY = sin(timer * 0.1) * 3;
+    fill(255, 255, 255, 230);
+    ellipse(0, floatY, 30, 40);
+    
+    // Ghost bottom wavy edge
+    fill(255, 255, 255, 230);
+    for (let i = 0; i < 6; i++) {
+        let waveY = floatY + 15 + sin(timer * 0.2 + i) * 3;
+        ellipse(-12 + i * 5, waveY, 8, 8);
+    }
+    
+    // Ghost eyes
+    fill(0, 0, 0, 200);
+    ellipse(-7, floatY - 5, 6, 8);
+    ellipse(7, floatY - 5, 6, 8);
+    
+    // Ghost mouth
+    fill(0, 0, 0, 150);
+    ellipse(0, floatY + 3, 8, 6);
+    
+    // Spooky aura
+    fill(200, 200, 255, 50);
+    ellipse(0, floatY, 50, 60);
+    
+    pop();
+}
+
+function drawSpookyUI() {
+    // UI background
+    fill(0, 0, 0, 150);
+    rect(10, 10, 250, 120);
+    
+    // Glowing text
+    fill(200, 255, 200);
+    textSize(16);
+    textAlign(LEFT);
+    text(`👻 Soul Taps: ${taps}`, 20, 30);
+    text(`💀 Total Score: ${score}`, 20, 50);
+    text(`⏰ Time: ${Math.floor(timer / 60)}s`, 20, 70);
+    text(`🌉 Bridge: ${currentBridge + 1}/${bridges.length}`, 20, 90);
+    text(`🌙 Level: ${level}`, 20, 110);
+    
+    // Tap indicator
+    if (gameState === 'waiting' && tapTimer < TAP_WINDOW) {
+        fill(255, 255, 100, 200);
+        textAlign(CENTER);
+        textSize(20);
+        text(`Tap ${bridges[currentBridge + 1]?.souls || 0} times!`, width/2, height/2 - 50);
+        
+        // Progress bar
+        let progress = tapTimer / TAP_WINDOW;
+        fill(255, 100, 100);
+        rect(width/2 - 100, height/2 - 20, 200 * progress, 10);
+        stroke(255);
+        strokeWeight(2);
+        noFill();
+        rect(width/2 - 100, height/2 - 20, 200, 10);
+        noStroke();
+    }
+    
+    if (gameState === 'gameover') {
+        // Game over screen
+        fill(0, 0, 0, 180);
+        rect(0, 0, width, height);
+        
+        textAlign(CENTER);
+        fill(255, 100, 100);
+        textSize(48);
+        text('👻 GAME OVER 👻', width/2, height/2 - 50);
+        
+        fill(255, 255, 255);
+        textSize(24);
+        text(`Final Score: ${score}`, width/2, height/2);
+        
+        fill(200, 200, 255);
+        textSize(18);
+        text('Press R to Rise Again...', width/2, height/2 + 40);
+    }
+}
+
+function generateMist() {
+    mist = [];
+    for (let i = 0; i < 8; i++) {
+        mist.push({
+            x: random(width),
+            y: random(height * 0.7, height),
+            size: random(40, 80),
+            speed: random(0.2, 0.8),
+            opacity: random(20, 60),
+            offset: random(TWO_PI)
+        });
+    }
+}
+
+function generateGravestones() {
+    gravestones = [];
+    for (let i = 0; i < 6; i++) {
+        gravestones.push({
+            x: random(width),
+            y: random(height * 0.6, height * 0.9),
+            width: random(15, 25),
+            height: random(20, 35)
+        });
+    }
+}
+
+function generateBats() {
+    bats = [];
+    for (let i = 0; i < 5; i++) {
+        bats.push({
+            x: random(width),
+            y: random(50, height * 0.5),
+            speedX: random(-1, 1),
+            speedY: random(-0.5, 0.5),
+            offset: random(TWO_PI)
+        });
+    }
+}
+
+function generateFireflies() {
+    fireflies = [];
+    for (let i = 0; i < 12; i++) {
+        fireflies.push({
+            x: random(width),
+            y: random(height),
+            offset: random(TWO_PI)
+        });
+    }
+}
+
+function mousePressed() {
+    if (gameState === 'waiting' && tapTimer < TAP_WINDOW) {
+        taps++;
+    }
+}
+
+function keyPressed() {
+    if (key === 'r' || key === 'R') {
+        if (gameState === 'gameover') {
+            resetGame();
+        }
+    }
+}
+
+function movePlayer() {
+    let next = currentBridge + 1;
+    if (next >= bridges.length) {
+        nextLevel();
+        return;
+    }
+    let bridge = bridges[next];
+    if (taps === bridge.souls) {
+        playerX = bridge.x + bridge.width / 2;
+        currentBridge++;
+        score += taps * level; // Bonus points for higher levels
+    } else {
+        gameState = 'gameover';
+    }
+    taps = 0;
+    tapTimer = 0;
+}
+
+function resetGame() {
+    level = 1;
+    playerX = 75;
+    playerY = height * 0.8;
+    currentBridge = 0;
+    taps = 0;
+    score = 0;
+    timer = 0;
+    gameState = 'waiting';
+    generateLevelBridges();
+    generateMist();
+    generateGravestones();
+    generateBats();
+    generateFireflies();
+}
+
+function nextLevel() {
+    level++;
+    if (level > 3) {
+        gameState = 'gameover';
+        return;
+    }
+    currentBridge = 0;
+    taps = 0;
+    tapTimer = 0;
+    gameState = 'waiting';
+    playerX = 75;
+    playerY = height * 0.8;
+    generateLevelBridges();
+    generateMist();
+    generateGravestones();
+    generateBats();
+    generateFireflies();
+}
+
+function generateLevelBridges() {
+    bridges = [];
+    let x = 50;
+    for (let i = 0; i < 6 + level * 2; i++) {
+        bridges.push({
+            x: x,
+            width: random(60, 90),
+            height: random(15, 30),
+            souls: Math.floor(random(1, 4 + level))
+        });
+        x += 130;
+    }
+}
+
+function windowResized() {
+    resizeCanvas(windowWidth, windowHeight);
+    playerY = height * 0.8;
+}
+</script>
+</body>
+</html>

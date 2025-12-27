@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Ghostly Leap</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.2/p5.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Creepster', cursive;
+    }
+    html, body {
+      height: 100%;
+      overflow: hidden;
+      background: radial-gradient(circle at center, #0a0a0a, #1a0033);
+    }
+    #overlay {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 10;
+      background: rgba(0, 0, 0, 0.7);
+      text-align: center;
+    }
+    #titleContainer {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 40px;
+      margin-bottom: 30px;
+    }
+    #overlay h1 {
+      font-size: 64px;
+      color: #88ff88;
+      text-shadow: 0 0 30px #88ff88, 0 0 80px #44ff44;
+      animation: ghostGlow 2s infinite alternate;
+      letter-spacing: 3px;
+      margin: 0;
+    }
+    .ghost-visual {
+      position: relative;
+      width: 80px;
+      height: 100px;
+    }
+    .ghost-visual::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 60px;
+      height: 60px;
+      background: radial-gradient(circle, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.7) 70%, rgba(255,255,255,0.3) 100%);
+      border-radius: 50%;
+      box-shadow: 0 0 30px rgba(255,255,255,0.6), 0 0 60px rgba(136,255,136,0.4);
+      animation: floatGhost 3s ease-in-out infinite;
+    }
+    .ghost-visual::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 70px;
+      height: 40px;
+      background: radial-gradient(ellipse, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0.5) 50%, rgba(255,255,255,0.2) 100%);
+      border-radius: 50% 50% 0 0 / 100% 100% 0 0;
+      clip-path: polygon(0% 0%, 20% 100%, 40% 0%, 60% 100%, 80% 0%, 100% 100%, 100% 0%);
+      box-shadow: 0 0 20px rgba(255,255,255,0.4);
+      animation: floatGhost 3s ease-in-out infinite;
+    }
+    .left-ghost::before {
+      animation-delay: 0s;
+    }
+    .left-ghost::after {
+      animation-delay: 0.2s;
+    }
+    .right-ghost::before {
+      animation-delay: 1s;
+    }
+    .right-ghost::after {
+      animation-delay: 1.2s;
+    }
+    .ghost-visual:nth-child(1)::before,
+    .ghost-visual:nth-child(1)::after {
+      animation-direction: reverse;
+    }
+    @keyframes floatGhost {
+      0%, 100% { 
+        transform: translateX(-50%) translateY(0px);
+        opacity: 0.8;
+      }
+      50% { 
+        transform: translateX(-50%) translateY(-15px);
+        opacity: 1;
+      }
+    }
+    @keyframes ghostGlow {
+      from { 
+        text-shadow: 0 0 30px #88ff88, 0 0 50px #44ff44; 
+        transform: scale(1);
+      }
+      to { 
+        text-shadow: 0 0 60px #88ff88, 0 0 90px #44ff44, 0 0 120px #22ff22; 
+        transform: scale(1.05);
+      }
+    }
+    #overlay button {
+      padding: 14px 32px;
+      font-size: 18px;
+      background: linear-gradient(45deg, #333333, #666666);
+      border: 2px solid #88ff88;
+      border-radius: 10px;
+      color: #88ff88;
+      font-weight: bold;
+      cursor: pointer;
+      transition: 0.3s;
+      box-shadow: 0 0 20px rgba(136, 255, 136, 0.3);
+    }
+    #overlay button:hover {
+      background: linear-gradient(45deg, #444444, #777777);
+      color: #ffffff;
+      box-shadow: 0 0 30px rgba(136, 255, 136, 0.6);
+      transform: translateY(-2px);
+    }
+    canvas {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <div id="overlay">
+    <div id="titleContainer">
+      <div class="ghost-visual left-ghost"></div>
+      <h1>Ghostly Leap</h1>
+      <div class="ghost-visual right-ghost"></div>
+    </div>
+    <button onclick="startGame()">Enter the Haunted Realm</button>
+   
+
+  </div>
+  
+  <script>
+    let gameState = 'intro';
+    let angle = 0;
+    let ghosts = [];
+    let platforms = [];
+    let fog = [];
+    let player;
+    function setup() {
+      createCanvas(windowWidth, windowHeight, WEBGL);
+      
+      // Create floating ghost spirits
+      for (let i = 0; i < 25; i++) {
+        ghosts.push({
+          x: random(-600, 600),
+          y: random(-400, 400),
+          z: random(-800, 800),
+          size: random(15, 40),
+          opacity: random(0.2, 0.8),
+          floatSpeed: random(0.01, 0.03),
+          bobOffset: random(0, TWO_PI)
+        });
+      }
+      
+      // Create fog particles
+      for (let i = 0; i < 60; i++) {
+        fog.push({
+          x: random(-800, 800),
+          y: random(-200, 200),
+          z: random(-1000, 1000),
+          size: random(20, 60),
+          driftSpeed: random(0.005, 0.02),
+          opacity: random(0.1, 0.3)
+        });
+      }
+      
+      // Define haunted platforms
+      platforms = [
+        { x: -300, width: 120, height: 25 },
+        { x: -80, width: 80, height: 25 },
+        { x: 150, width: 140, height: 25 },
+        { x: 400, width: 100, height: 25 }
+      ];
+      
+      // Player ghost
+      player = {
+        x: platforms[0].x,
+        y: -30,
+        z: 0,
+        size: 40
+      };
+    }
+    
+    function draw() {
+      background(5, 5, 15);
+      
+      // Rotate the entire scene slightly
+      rotateX(-0.2);
+      rotateY(angle * 0.002);
+      
+      // Spooky lighting
+      ambientLight(30, 30, 40);
+      pointLight(100, 255, 100, 0, -200, 300);    // Eerie green light
+      pointLight(255, 255, 255, 200, 0, 200);     // Ghostly white light
+      pointLight(150, 150, 255, -200, 100, 400);  // Mysterious blue light
+      
+      if (gameState === 'intro') {
+        drawIntroScene();
+        return;
+      }
+      
+      // Game draw would go here
+    }
+    
+    function drawIntroScene() {
+      // Draw drifting fog
+      for (let f of fog) {
+        push();
+        translate(f.x + sin(angle * f.driftSpeed) * 50, f.y, f.z);
+        fill(200, 200, 255, f.opacity * 255);
+        noStroke();
+        sphere(f.size);
+        pop();
+      }
+      
+      // Draw floating ghost spirits with better visual design
+      for (let ghost of ghosts) {
+        push();
+        translate(
+          ghost.x + sin(angle * ghost.floatSpeed + ghost.bobOffset) * 30,
+          ghost.y + cos(angle * ghost.floatSpeed + ghost.bobOffset) * 20,
+          ghost.z
+        );
+        
+        // Ghost glow effect
+        fill(136, 255, 136, ghost.opacity * 255);
+        emissiveMaterial(136, 255, 136);
+        
+        // Ghost main body
+        push();
+        scale(1, 1.3, 1);
+        sphere(ghost.size);
+        pop();
+        
+        // Ghost wavy bottom
+        push();
+        translate(0, ghost.size * 1.1, 0);
+        for (let i = 0; i < 5; i++) {
+          push();
+          let waveX = cos(i * PI/3 + angle * 0.03) * 6;
+          let waveY = sin(i * PI/3 + angle * 0.03) * 4;
+          translate(waveX, waveY + i * 2, 0);
+          fill(136, 255, 136, ghost.opacity * 255 * (1 - i * 0.15));
+          sphere(ghost.size * (0.7 - i * 0.1));
+          pop();
+        }
+        pop();
+        
+        // Simple ghost eyes
+        if (ghost.size > 25) {
+          push();
+          fill(0, 0, 0, ghost.opacity * 255);
+          translate(-ghost.size * 0.3, -ghost.size * 0.2, ghost.size * 0.8);
+          sphere(3);
+          translate(ghost.size * 0.6, 0, 0);
+          sphere(3);
+          pop();
+        }
+        
+        pop();
+      }
+      
+      // Draw haunted platforms with spooky glow
+      for (let platform of platforms) {
+        push();
+        translate(platform.x, 50, 0);
+        
+        // Platform glow
+        fill(100, 100, 100, 180);
+        emissiveMaterial(80, 80, 120);
+        box(platform.width, platform.height, 100);
+        
+        // Spooky underglow
+        push();
+        translate(0, 20, 0);
+        fill(136, 255, 136, 50);
+        box(platform.width * 1.1, 5, 110);
+        pop();
+        
+        pop();
+      }
+      
+      // Player ghost with enhanced visual design
+      push();
+      translate(
+        player.x + sin(angle * 0.02) * 5,
+        player.y + cos(angle * 0.03) * 8,
+        player.z
+      );
+      
+      // Player glow aura (multiple layers)
+      push();
+      fill(255, 255, 255, 30);
+      scale(2);
+      sphere(player.size);
+      pop();
+      
+      push();
+      fill(136, 255, 136, 40);
+      scale(1.5);
+      sphere(player.size);
+      pop();
+      
+      // Main ghost body (classic ghost shape)
+      fill(255, 255, 255, 240);
+      emissiveMaterial(255, 255, 255);
+      
+      // Ghost head (main body)
+      push();
+      scale(1, 1.1, 1);
+      sphere(player.size);
+      pop();
+      
+      // Ghost bottom (wavy tail effect)
+      push();
+      translate(0, player.size * 0.8, 0);
+      for (let i = 0; i < 8; i++) {
+        push();
+        let waveX = cos(i * PI/4 + angle * 0.05) * 12;
+        let waveY = sin(i * PI/4 + angle * 0.05) * 8;
+        translate(waveX, waveY + i * 3, 0);
+        fill(255, 255, 255, 240 - i * 20);
+        sphere(player.size * (0.8 - i * 0.08));
+        pop();
+      }
+      pop();
+      
+      // Ghost eyes (glowing)
+      push();
+      fill(0, 255, 255, 200);
+      emissiveMaterial(0, 255, 255);
+      translate(-12, -10, 28);
+      sphere(6);
+      translate(24, 0, 0);
+      sphere(6);
+      pop();
+      
+      // Ghost mouth (spooky glow)
+      push();
+      fill(255, 100, 100, 180);
+      emissiveMaterial(255, 100, 100);
+      translate(0, 8, 28);
+      // Create oval mouth
+      push();
+      scale(1.5, 1, 1);
+      sphere(4);
+      pop();
+      pop();
+      
+      // Floating wisps around player
+      for (let i = 0; i < 4; i++) {
+        push();
+        let wispX = cos(angle * 0.03 + i * PI/2) * 60;
+        let wispY = sin(angle * 0.025 + i * PI/2) * 40;
+        let wispZ = sin(angle * 0.04 + i * PI/3) * 20;
+        
+        translate(wispX, wispY, wispZ);
+        fill(255, 255, 255, 120);
+        emissiveMaterial(255, 255, 255);
+        sphere(8);
+        pop();
+      }
+      
+      pop();
+      
+      // Floating spectral orbs around the scene
+      for (let i = 0; i < 8; i++) {
+        push();
+        let orbX = cos(angle * 0.01 + i * PI/4) * 400;
+        let orbY = sin(angle * 0.015 + i * PI/4) * 200;
+        let orbZ = sin(angle * 0.008 + i * PI/3) * 300;
+        
+        translate(orbX, orbY, orbZ);
+        fill(100, 255, 200, 150);
+        emissiveMaterial(100, 255, 200);
+        sphere(12);
+        pop();
+      }
+      
+      angle += 1;
+    }
+    
+    function startGame() {
+      window.location.href = "gaming.html";
+    }
+    
+    function windowResized() {
+      resizeCanvas(windowWidth, windowHeight);
+    }
+  </script>
+</body>
+</html>
