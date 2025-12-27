@@ -1,5 +1,7 @@
 # 👻 Ghostly Leap
 
+🎮 **Live Demo** → https://ghostly-leap.vercel.app
+
 **Ghostly Leap** is a one-tap atmospheric WebGL game built using **p5.js**, where players guide a lost spirit across haunted bridges by matching soul-taps. Created for casual and spooky arcade gameplay, it features immersive visuals, parallax backdrops, and smooth progression across levels.
 
 ---
@@ -24,18 +26,18 @@ The game features dynamic backdrops with glowing moons, drifting mist, bats, gra
 
 ## 📁 Files
 
-| File Name         | Purpose                         |
-|-------------------|---------------------------------|
-| `Gaming.html`     | Main game file (includes code)  |
-| `frontpage.html`  | Splash/start screen or intro    |
-| `README.md`       | Game description and usage info |
+| File Name        | Purpose                              |
+|------------------|--------------------------------------|
+| `index.html`     | Splash / start screen (entry point)  |
+| `Gaming.html`    | Main game logic and rendering        |
+| `README.md`      | Game description and usage info      |
 
 ---
 
 ## ✅ How to Play
 
-1. Open `frontpage.html` to launch the game's welcome screen.
-2. Click **Start** or similar prompt to begin the game (`Gaming.html`).
+1. Open `index.html` (or visit the live demo link).
+2. Click **Start** to begin the game.
 3. Tap (or click) **once for each soul orb** floating above the next bridge.
 4. Wait after tapping — the ghost will move if your count is correct.
 5. Reach the final bridge of a level to progress.
@@ -45,19 +47,19 @@ The game features dynamic backdrops with glowing moons, drifting mist, bats, gra
 
 ## 🔧 Built With
 
-- [p5.js v1.4.2](https://p5js.org/) — creative coding framework
-- HTML5 + CSS3 — for layout and styling
-- JavaScript — for game logic and animation
+- **p5.js v1.4.2** — creative coding framework
+- **HTML5 + CSS3** — layout and styling
+- **JavaScript** — game logic and animation
 
 ---
 
 ## 🎯 Goals & Expansion Ideas
 
-- 🔄 Endless bridge mode
-- 🧑‍🤝‍🧑 Multiplayer ghost race
-- 🎭 Unlockable ghost skins
-- 📖 Story-driven campaign with lore
-- 📱 Mobile controls and sound effects
+- 🔄 Endless bridge mode  
+- 🧑‍🤝‍🧑 Multiplayer ghost race  
+- 🎭 Unlockable ghost skins  
+- 📖 Story-driven campaign with lore  
+- 📱 Mobile controls and sound effects  
 
 ---
 
@@ -65,7 +67,7 @@ The game features dynamic backdrops with glowing moons, drifting mist, bats, gra
 
 - **Game Design & Development**: amr  
 - **Visual Design & Effects**: Custom-coded fog, moon, spirit animations  
-- **Framework**: [p5.js](https://p5js.org)
+- **Framework**: p5.js  
 
 ---
 
@@ -75,14 +77,9 @@ This game is submitted as part of **LudoHack 2025** and is intended for personal
 
 ---
 
-## 🌐 Hosting Suggestions
+## 🌐 Hosting
 
-You can host this game on:
+The game is currently hosted on **Vercel**:  
+👉 https://ghostly-leap.vercel.app
 
-- [GitHub Pages](https://pages.github.com)
-- [Itch.io](https://itch.io/)
-- [Netlify](https://www.netlify.com/)
-- [Vercel](https://vercel.com/)
-
-To play locally, simply open `frontpage.html` in any modern browser.
-
+To play locally, simply open `index.html` in any modern browser.
